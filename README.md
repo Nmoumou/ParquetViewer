@@ -1,11 +1,11 @@
 # ParquetViewer
-<img src="sreenshot/1.png" style="zoom:75%;" />
+![](sreenshot/1.png)
 
-<img src="sreenshot/2.png" style="zoom:75%;" />
+![](sreenshot/2.png)
 
-<img src="sreenshot/3.png" style="zoom:75%;" />
+![](sreenshot/3.png)
 
-<img src="sreenshot/4.png" style="zoom:75%;" />
+![](sreenshot/4.png)
 
 **Only available for windows version download**
 
