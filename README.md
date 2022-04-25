@@ -7,18 +7,20 @@
 
 ![](sreenshot/4.png)
 
+![](sreenshot/5.png)
+
 **Only available for windows version download**
 
 ### **Currently supported features**
 
 1. 20 records preview
 2. Total number of file records
-3. file structure
+3. File structure
+4. Support to convert to CSV
 
 ### **future features**
 
 1. SQL-like query function
-2. Format conversion function (CSV, JSON, etc.)
 
 ### Reference library
 
@@ -35,11 +37,11 @@
 1. parquet文件记录预览（20条）
 2. parquet文件记录总数
 3. parquet文件结构详情
+4. parquet文件转CSV
 
 ### **计划功能**
 
 1. 类SQL查询功能
-2. 格式转换功能(可转为CSV,JSON等)
 
 ### 引用库
 

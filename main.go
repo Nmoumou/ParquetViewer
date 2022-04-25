@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
 	"net/url"
 	"os"
@@ -152,7 +153,7 @@ func main() {
 		if reader == nil {
 			fmt.Println("Cancelled choose")
 		} else {
-			dialogPro := dialog.NewProgressInfinite("Loading", "Please be patient, the data is loading", myWindow)
+			dialogPro := dialog.NewCustom("Loading", "OK", container.New(layout.NewVBoxLayout(), widget.NewLabel("Please be patient, the data is loading"), widget.NewProgressBarInfinite()), myWindow)
 			dialogPro.Show()
 			//初始化数据
 			parquetInfo.recordtile = []string{}
@@ -207,9 +208,9 @@ func main() {
 	maincontent := container.NewBorder(
 		container.NewVBox(title, widget.NewSeparator()), nil, nil, nil, content)
 	if fyne.CurrentDevice().IsMobile() {
-		myWindow.SetContent(makeNav(setMiddleContent, makeNavPara))
+		myWindow.SetContent(makeNav(setMiddleContent, makeNavPara, myWindow, &parquetInfo))
 	} else {
-		split := container.NewHSplit(makeNav(setMiddleContent, makeNavPara), maincontent)
+		split := container.NewHSplit(makeNav(setMiddleContent, makeNavPara, myWindow, &parquetInfo), maincontent)
 		split.Offset = 0.2
 		myWindow.SetContent(split)
 	}
@@ -234,7 +235,7 @@ func parseURL(urlStr string) *url.URL {
 	return link
 }
 
-func makeNav(setMiddleContent func(mc MiddleContent), para MakeNavPara) fyne.CanvasObject {
+func makeNav(setMiddleContent func(mc MiddleContent), para MakeNavPara, mWindow fyne.Window, parquetInfo *ParquetInfo) fyne.CanvasObject {
 
 	setMiddleContent(para.welcomMiddle)
 
@@ -243,11 +244,41 @@ func makeNav(setMiddleContent func(mc MiddleContent), para MakeNavPara) fyne.Can
 			para.fd.Show()
 		}),
 		widget.NewButton("View", func() {
-			setMiddleContent(para.tableMiddle)
+			if parquetInfo.filePath != "" {
+				setMiddleContent(para.tableMiddle)
+			} else {
+				warningDlg := dialog.NewInformation("Info", "Please open the parquet file first", mWindow)
+				warningDlg.Show()
+			}
+
 		}),
 		widget.NewButton("Schema", func() {
-			setMiddleContent(para.schemaMiddle)
+			if parquetInfo.schemaName != "" {
+				setMiddleContent(para.schemaMiddle)
+			} else {
+				warningDlg := dialog.NewInformation("Info", "Please open the parquet file first", mWindow)
+				warningDlg.Show()
+			}
+
 		}),
+
+		widget.NewButton("Export to CSV", func() {
+			if parquetInfo.filePath != "" {
+				dialogMou := dialog.NewCustom("Writing", "OK", container.New(layout.NewVBoxLayout(), widget.NewLabel("Please be patient, the data is writing"), widget.NewProgressBarInfinite()), mWindow)
+				dialogMou.Show()
+				filename := parquetInfo.schemaName + ".csv"
+				columns := parseAllRecords(parquetInfo.filePath, parquetInfo)
+				exportCsv(filename, *columns, mWindow)
+				dialogMou.Hide()
+				dialogFinish := dialog.NewInformation("Congratulations", "The file has been exported to "+filename, mWindow)
+				dialogFinish.Show()
+			} else {
+				warningDlg := dialog.NewInformation("Info", "Please open the parquet file first", mWindow)
+				warningDlg.Show()
+			}
+
+		}),
+		widget.NewSeparator(),
 		widget.NewButton("Exit", func() {
 			a := fyne.CurrentApp()
 			a.Quit()
@@ -275,4 +306,19 @@ func makeNav(setMiddleContent func(mc MiddleContent), para MakeNavPara) fyne.Can
 	)
 
 	return container.NewBorder(topcontent, nil, nil, nil, topcontent, schemaList)
+}
+
+func exportCsv(filePath string, data [][]string, mWindow fyne.Window) {
+	fp, err := os.Create(filePath) // 创建文件句柄
+	if err != nil {
+		dialog.ShowError(err, mWindow)
+		// fmt.Printf("创建文件["+filePath+"]句柄失败,%v", err)
+		return
+	}
+	defer fp.Close()
+
+	fp.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
+	w := csv.NewWriter(fp)         //创建一个新的写入文件流
+	w.WriteAll(data)
+	w.Flush()
 }

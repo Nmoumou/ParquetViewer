@@ -75,6 +75,61 @@ func parse(filepath string, parquetInfo *ParquetInfo) {
 	parquetInfo.recordsum = count
 }
 
+func parseAllRecords(filepath string, parquetInfo *ParquetInfo) *[][]string {
+	r, err := os.Open(filepath)
+	if err != nil {
+		log.Printf("Printing file %s", err.Error())
+	}
+	defer r.Close()
+
+	fr, err := goparquet.NewFileReader(r)
+	if err != nil {
+		log.Printf("Printing file %s", err.Error())
+	}
+
+	allrecords := make([][]string, parquetInfo.recordsum+1)
+	//首先添加表头
+	oriColums := fr.Columns()
+	colLen := len(oriColums)
+	for i := 0; i < colLen; i++ {
+		allrecords[0] = append(allrecords[0], oriColums[i].Name())
+	}
+	count := 0
+	for {
+
+		if count >= parquetInfo.recordsum { //如果超过最大条数，则跳出循环,防止内存溢出
+			break
+		}
+
+		row, err := fr.NextRow()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Println("reading record failed: %w", err)
+		}
+
+		for j := 0; j < len(allrecords[0]); j++ {
+			findKey := false
+			for key, v := range row {
+				if vv, ok := v.([]byte); ok {
+					v = string(vv)
+				}
+				if allrecords[0][j] == key {
+					singleValue := Strval(v)
+					allrecords[count+1] = append(allrecords[count+1], singleValue)
+					findKey = true
+				}
+			}
+			if !findKey {
+				allrecords[count+1] = append(allrecords[count+1], "")
+			}
+		}
+		count++
+	}
+	return &allrecords
+}
+
 func Strval(value interface{}) string {
 	var key string
 	if value == nil {
